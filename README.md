@@ -1,0 +1,2 @@
+# SkriptSnippets
+my Skript snippets

@@ -1,10 +1,11 @@
+Original code from https://github.com/ShaneBeee/SkriptSnippets/blob/master/snippets/player/Skin-Changer.sk
 # Skin Changer
 # By: ShaneBee, Yesang_, dorondo
 
 # This is the fork of Simple Skin Changer
 #It solves problem that skin have not been updated by others,
 #add several different methods to get skin,
-#and ensures compatibility with Bettermodel
+#add compatibility with Bettermodel
 
 # Requires: Skript-Reflect and Paper (I should hope you already have Paper)
 

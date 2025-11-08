@@ -104,8 +104,3 @@ expression [player] profile name of %player%:
         set {_pro} to {_player}.getPlayerProfile()
         {_pro}.setName({_name})
         {_player}.setPlayerProfile({_pro})
-#! EXAMPLE USAGE !#
-command /setskin <name:string>:
-	trigger:
-		set profile name of player to {_name}
-		set skin of player to {_name}

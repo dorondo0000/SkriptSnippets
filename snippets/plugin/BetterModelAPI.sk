@@ -1,0 +1,169 @@
+#by dorondo
+#ver 251117
+
+#BetterModel 1.14.0 paper에서 테스트
+#Skript는 함수 오버로딩이 지원되는 버전이여야함(모르겠으면 최신 ㄱ)
+
+#예제코드
+command /bm_example:
+    trigger:
+        BM_clearModels(player)
+        wait 1 second
+        set {_r} to BM_addLimb(player,"steve",player("dorondo"))
+        BM_addModel(player,"center_guardian")
+        BM_playAnimation({_r},"backflip")
+        wait 1 second
+        BM_removeModel({_r})
+        wait 1 second
+        BM_removeModel(player,"center_guardian")
+
+import:
+    kr.toxicity.model.api.BetterModel
+    kr.toxicity.model.api.animation.AnimationModifier
+    kr.toxicity.model.api.tracker.EntityTrackerRegistry
+    kr.toxicity.model.api.bone.RenderedBone
+    kr.toxicity.model.api.util.function.FloatSupplier
+    kr.toxicity.model.api.tracker.EntityHideOption
+    kr.toxicity.model.api.tracker.TrackerModifier
+    kr.toxicity.model.api.tracker.TrackerUpdateAction
+    kr.toxicity.model.api.tracker.EntityTracker
+    java.util.function.Consumer
+    java.util.function.Supplier
+    org.joml.Vector3f
+
+#모델 추가, models 폴더 안에 있는 bbmodel 파일 이름을 기준으로 불러옴
+#모델들은 한 엔티티에 여러개 들어갈수있음
+function BM_addModel(e:entity,model:text):: object:
+    {_e} is set
+    set {_m} to BetterModel.model({_model}).orElse(null)
+    return {_m}.create({_e})
+
+#플레이어 이모트 모델 추가, players 폴더 안에 있는 bbmodel 파일 이름을 기준으로 불러옴, 이름 안적으면 기본모델인 steve
+function BM_addLimb(e:entity,model:text="steve",skin:offline player):: object:
+    {_e} is set
+    set {_m} to BetterModel.limb({_model}).orElse(null)
+    return {_m}.create({_e},{_skin})
+
+#모델을 추가해도 원래 플레이어 모습이 유지됨, 날개같은거 만들때 사용
+function BM_addModelwithoutHide(e:entity,model:text):: object:
+    create section with {_proxy} and {_c} stored in {_proxy::accept}:
+        {_c}.hideOption(EntityHideOption.FALSE)
+    set {_proxy} to new proxy instance of Consumer using {_proxy::*}
+    {_proxy}.accept()
+    set {_m} to BetterModel.model({_model}).orElse(null)
+    {_m}.create({_e}, TrackerModifier.DEFAULT, {_proxy})
+
+#엔티티에서 해당 모델을 제거
+function BM_removeModel(e:entity,model:text):
+    {_e} is set
+    BM_removeModel(BM_getTracker({_e},{_model}))
+
+function BM_removeModel(r:object):
+    {_r}.close()
+
+#엔티티에서 전체 모델 제거
+function BM_clearModels(e:entity):
+    {_e} is set
+    set {_reg} to EntityTrackerRegistry.registry(uuid of {_e})
+    {_reg}.close()
+
+#애니메이션 재생, li는 선딜레이, lo는 후딜레이, sp는 재생속도 기본 0,0,1
+function BM_playAnimation(e:entity,model:text,ani:text,li:integer=0,lo:integer=0,sp:number=1):
+    {_e} is set
+    BM_playAnimation(BM_getTracker({_e},{_model}),{_ani},{_li},{_lo},{_sp})
+
+function BM_playAnimation(r:object,ani:text,li:integer=0,lo:integer=0,sp:number=1):
+    {_e} is set
+    {_r}.animate({_ani}, new AnimationModifier({_li},{_lo},{_sp}))
+
+#애니메이션 정지
+function BM_stopAnimation(e:entity,model:text,ani:text):
+    {_e} is set
+    BM_stopAnimation(BM_getTracker({_e},{_m}),{_ani})
+
+function BM_stopAnimation(r:object,ani:text):
+    {_e} is set
+    {_r}.stopAnimation({_ani})
+
+#내부적으로 쓰이는건데 직접 쓸일은 잘 없음
+#Tracker 개념을 보려면 베러모델 위키
+function BM_getTracker(e:entity,model:text):: object:
+    return EntityTrackerRegistry.registry(uuid of {_e}).tracker({_model})
+
+#Dummy Tracker를 생성함
+#각 플레이어에게 spawn 전까지는 보이지않음
+#제자리에 고정된 모델을 소환하려면 이거말고 그냥 marker나 빈 display하나 만들고 거기에 Entity Tracker로 넣으삼
+function BM_addDummy(l:location,model:text):: object:
+    set {_m} to BetterModel.model({_model}).orElse(null)
+    return {_m}.create({_l})
+
+function BM_spawnDummy(r:object,p:players):
+    loop {_p::*}:
+        {_r}.spawn(loop-value)
+
+#재생중인 애니메이션
+function BM_getPlayingAnimation(e:entity,model:text):: string:
+    {_e} is set
+    return BM_getPlayingAnimation(BM_getTracker({_e},{_m}))
+
+function BM_getPlayingAnimation(r:object):: string:
+    set {_b} to {_r}.bones().iterator().next()
+    return {_b}.runningAnimation().name()
+
+#특정 본의 위치를 리턴함
+#칼 휘두를때 궤적 따라서 파티클같은거 나오게 하고싶으면 사용
+#본 이름은 블록벤치 그룹 이름따라감
+#참고로 그룹 없으면 그 큐브 안보임
+function BM_getBoneLocation(e:entity,model:text,id:text):: location:
+    {_e} is set
+    set {_v} to EntityTrackerRegistry.registry(uuid of {_e}).tracker({_model}).bone({_id}).hitBoxPosition()
+    return {_e} ~ vector({_v}.x,{_v}.y,{_v}.z) ? {_e}
+
+function BM_getBoneLocation(r:object,id:text):: location:
+    {_e} is set
+    set {_v} to EntityTrackerRegistry.registry(uuid of {_e}).tracker({_model}).bone({_id}).hitBoxPosition()
+    return {_e} ~ vector({_v}.x,{_v}.y,{_v}.z) ? {_e}
+
+#스케일 설정인데 아무 애니메이션이나 재생 되어야 갱신됨
+function BM_setScale(e:entity,model:string,scale:number):
+    BM_setScale(BM_getTracker({_e},{_model}),{_scale})
+
+function BM_setScale(r:object,scale:number):
+    create section with {_pre} stored in {_pre::getAsFloat}:
+        return {_scale}
+    set {_pre} to new proxy instance of FloatSupplier using {_pre::*}
+    {_r}.getPipeline().scale({_pre})
+
+#ㅇㅇ
+function BM_setTranslation(e:entity,model:string,v:vector):
+    BM_setTranslation(BM_getTracker({_e},{_model}),{_v})
+
+function BM_setTranslation(r:object,v:vector):
+    create section with {_spl} stored in {_m::get}:
+        return new Vector3f({_v}.x,{_v}.y,{_v}.z)
+    set {_spl} to new proxy instance of Supplier using {_m::*}
+    {_r}.getPipeline().defaultPosition({_spl})
+
+
+function BM_hide(e:entity,model:string,p:players):
+    BM_hide(BM_getTracker({_e},{_model}),players in {_p::*})
+
+function BM_hide(r:object,p:players):
+    set {_p} to {_r}.getPipeline()
+    loop {_p::*}:
+        {_p}.hide(loop-value)
+
+
+function BM_show(e:entity,model:string,p:players):
+    BM_show(BM_getTracker({_e},{_model}),players in {_p::*})
+
+function BM_show(r:object,p:players):
+    set {_p} to {_r}.getPipeline()
+    loop {_p::*}:
+        {_p}.show(loop-value)
+
+#디스플레이 설정하고 비슷
+function BM_setViewRange(r:object,n:number):
+    {_r}.update(TrackerUpdateAction.viewRange({_number}))
+#빌보드,밝기 등등 더있는데 여기서 찾으셈 https://github.com/toxicity188/BetterModel/blob/master/api/src/main/java/kr/toxicity/model/api/tracker/TrackerUpdateAction.java
+

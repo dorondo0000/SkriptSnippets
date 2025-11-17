@@ -17,6 +17,13 @@ command /bm_example:
         wait 1 second
         BM_removeModel(player,"center_guardian")
 
+command /sex:
+    trigger:
+        BM_clearModels(player)
+        set {_r} to BM_addModel(player,"center_guardian")
+        wait 1 second
+        BM_playAnimation({_r},"spinattack")
+
 import:
     kr.toxicity.model.api.BetterModel
     kr.toxicity.model.api.animation.AnimationModifier
@@ -73,7 +80,6 @@ function BM_playAnimation(e:entity,model:text,ani:text,li:integer=0,lo:integer=0
     BM_playAnimation(BM_getTracker({_e},{_model}),{_ani},{_li},{_lo},{_sp})
 
 function BM_playAnimation(r:object,ani:text,li:integer=0,lo:integer=0,sp:number=1):
-    {_e} is set
     {_r}.animate({_ani}, new AnimationModifier({_li},{_lo},{_sp}))
 
 #애니메이션 정지
@@ -82,7 +88,6 @@ function BM_stopAnimation(e:entity,model:text,ani:text):
     BM_stopAnimation(BM_getTracker({_e},{_m}),{_ani})
 
 function BM_stopAnimation(r:object,ani:text):
-    {_e} is set
     {_r}.stopAnimation({_ani})
 
 #내부적으로 쓰이는건데 직접 쓸일은 잘 없음
@@ -120,7 +125,6 @@ function BM_getBoneLocation(e:entity,model:text,id:text):: location:
     return {_e} ~ vector({_v}.x,{_v}.y,{_v}.z) ? {_e}
 
 function BM_getBoneLocation(r:object,id:text):: location:
-    {_e} is set
     set {_v} to EntityTrackerRegistry.registry(uuid of {_e}).tracker({_model}).bone({_id}).hitBoxPosition()
     return {_e} ~ vector({_v}.x,{_v}.y,{_v}.z) ? {_e}
 

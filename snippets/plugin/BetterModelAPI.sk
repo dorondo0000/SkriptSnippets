@@ -39,10 +39,12 @@ function BM_addModel(e:entity,model:text):: object:
     return {_m}.create({_e})
 
 #플레이어 이모트 모델 추가, players 폴더 안에 있는 bbmodel 파일 이름을 기준으로 불러옴, 이름 안적으면 기본모델인 steve
-function BM_addLimb(e:entity,model:text="steve",skin:offline player):: object:
+#skin은 비워두면 그 플레이어 스킨으로 나올거고, 다른 플레이어 스킨이나 오프라인 플레이어 스킨 적용하고싶다면 사용
+#또는 플레이어가 아닌 엔티티에 플레이어 입힐려면 사용
+function BM_addLimb(e:entity,model:text="steve",skin:offline player={_}):: object:
     {_e} is set
     set {_m} to BetterModel.limb({_model}).orElse(null)
-    return {_m}.create({_e},{_skin})
+    return {_m}.create({_e},{_skin} ? {_e})
 
 #모델을 추가해도 원래 플레이어 모습이 유지됨, 날개같은거 만들때 사용
 function BM_addModelwithoutHide(e:entity,model:text):: object:
@@ -141,7 +143,7 @@ function BM_setTranslation(r:object,v:vector):
     set {_spl} to new proxy instance of Supplier using {_m::*}
     {_r}.getPipeline().defaultPosition({_spl})
 
-
+#hide, show
 function BM_hide(e:entity,model:string,p:players):
     BM_hide(BM_getTracker({_e},{_model}),players in {_p::*})
 

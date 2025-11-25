@@ -17,13 +17,6 @@ command /bm_example:
         wait 1 second
         BM_removeModel(player,"center_guardian")
 
-command /sex:
-    trigger:
-        BM_clearModels(player)
-        set {_r} to BM_addModel(player,"center_guardian")
-        wait 1 second
-        BM_playAnimation({_r},"spinattack")
-
 import:
     kr.toxicity.model.api.BetterModel
     kr.toxicity.model.api.animation.AnimationModifier

@@ -4,6 +4,10 @@
 #BetterModel 1.14.0 paper에서 테스트
 #Skript는 함수 오버로딩이 지원되는 버전이여야함(모르겠으면 최신 ㄱ)
 
+#베러모델 간단 사용법
+#models에 bbmodel 통쨰로넣고 커맨드 /bm reload 입력하세요
+#build 폴더 또는 zip파일로 리팩생성되는데 그거 적용하면 보임
+
 #예제코드
 command /bm_example:
     trigger:
@@ -119,10 +123,6 @@ function BM_getBoneLocation(e:entity,model:text,id:text):: location:
     set {_v} to EntityTrackerRegistry.registry(uuid of {_e}).tracker({_model}).bone({_id}).hitBoxPosition()
     return {_e} ~ vector({_v}.x,{_v}.y,{_v}.z) ? {_e}
 
-function BM_getBoneLocation(r:object,id:text):: location:
-    set {_v} to EntityTrackerRegistry.registry(uuid of {_e}).tracker({_model}).bone({_id}).hitBoxPosition()
-    return {_e} ~ vector({_v}.x,{_v}.y,{_v}.z) ? {_e}
-
 #스케일 설정인데 아무 애니메이션이나 재생 되어야 갱신됨
 function BM_setScale(e:entity,model:string,scale:number):
     BM_setScale(BM_getTracker({_e},{_model}),{_scale})
@@ -165,4 +165,3 @@ function BM_show(r:object,p:players):
 function BM_setViewRange(r:object,n:number):
     {_r}.update(TrackerUpdateAction.viewRange({_number}))
 #빌보드,밝기 등등 더있는데 여기서 찾으셈 https://github.com/toxicity188/BetterModel/blob/master/api/src/main/java/kr/toxicity/model/api/tracker/TrackerUpdateAction.java
-

@@ -1,0 +1,29 @@
+function square_attack(p:player):
+    set {_w} to 3
+    set {_h} to 8
+    play sound "entity.player.attack.sweep" at {_p}
+    set {_l} to {_p}'s location
+    set {_l}'s pitch to 0
+    set {_center} to location round({_h}/2) forward {_l}
+    set {_v1} to vector in horizontal direction of {_p}
+    set {_v2} to {_v1} rotated around y-axis by 90
+    set {_radius} to sqrt({_w}*{_w}+{_h}*{_h})
+    loop all living entities in radius {_radius} of {_center}:
+        if loop-value is not {_p}:
+            set {_v3} to vector from {_center} to loop-value
+            set {_v3}.y to 0
+            if 2*abs({_v3} dot {_v2}) > {_w}:
+                continue
+            if 2*abs({_v3} dot {_v1}) > {_h}:
+                continue
+            if abs(y pos of {_center} - y pos of loop-value) > 1.5:
+                continue
+            damage loop-value by 3
+            draw 5 of sweep attack at loop-value
+    spawn block display at {_center}:
+        set display translation of entity to vector({_w}/-2,0,{_h}/-2)
+        set display item of entity to red stained glass
+        set display scale of entity to vector({_w},0.01,{_h})
+        set {_e} to entity
+    wait 0.5 second
+    kill {_e}

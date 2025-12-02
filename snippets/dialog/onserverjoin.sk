@@ -1,0 +1,141 @@
+
+#by dorondo
+#이거 참고해서 구현 https://docs.papermc.io/paper/dev/dialogs/#requiring-the-player-to-agree-before-allowing-them-to-join
+
+#Skript, Skript-reflect, SKNMS 필요
+#SKNMS 안쓸거면 데팩으로 다이얼로그 만들어놓기
+
+options:
+    버거코드: 69746974
+    당첨번호: 69
+    kick-message: 수고요
+    쿨타임: 40
+
+import:
+    io.papermc.paper.registry.RegistryAccess
+    io.papermc.paper.registry.RegistryKey
+    io.papermc.paper.event.connection.configuration.AsyncPlayerConnectionConfigureEvent
+    io.papermc.paper.event.player.PlayerCustomClickEvent
+    com.destroystokyo.paper.event.player.PlayerConnectionCloseEvent
+    io.papermc.paper.connection.PlayerConfigurationConnection
+    java.util.concurrent.CompletableFuture
+    java.util.concurrent.TimeUnit
+    net.kyori.adventure.text.Component
+    net.kyori.adventure.text.format.NamedTextColor
+    net.kyori.adventure.key.Key
+
+registry registration:
+    register confirmation dialog with id "success":
+        title: "ㅊㅊ성공"
+        can_close_with_escape: false
+        after_action: "wait_for_response"
+        body:
+            add plain message body:
+                contents: "남들이쓰기전에먼저쓰세용%nl%{@버거코드}"
+                width: 220
+        actions:
+            add dynamic action button:
+                label: "재시도하기"
+                id: "success/re"
+            add dynamic action button:
+                label: "서버나가기"
+                id: "success/quit"
+    register confirmation dialog with id "fail":
+        title: "꽝이지롱"
+        can_close_with_escape: false
+        after_action: "wait_for_response"
+        body:
+            add plain message body:
+                contents: "꽝이네요~ ㄲㅂㄲㅂ"
+                width: 220
+        actions:
+            add dynamic action button:
+                label: "재시도하기"
+                id: "fail/re"
+            add dynamic action button:
+                label: "서버나가기"
+                id: "fail/quit"
+    register new multi action dialog with id "main":
+        title: "Command Hub"
+        can_close_with_escape: true
+        columns: 20
+        body:
+            add plain message body:
+                contents: "하나를 선택하쎼요"
+                width: 500
+        actions:
+            loop 100 times:
+                if loop-value is {@당첨번호}:
+                    add dynamic action button:
+                        label: "%loop-number%"
+                        id: "main/success"
+                        width: 15
+                else:
+                    add dynamic action button:
+                        label: "%loop-number%"
+                        id: "main/fail%loop-value%"
+                        width: 15
+
+function get_dialog(key:string):: object:
+    set {_registry} to RegistryAccess.registryAccess().getRegistry(RegistryKey.DIALOG)
+    if {_registry} is null:
+        return null
+    return {_registry}.get(Key.key({_key}))
+
+function set_join_result(key:string, value: boolean):
+    set {_future} to {-dialog::%{_key}%}
+    if {_future} is set:
+        {_future}.complete({_value})
+
+on AsyncPlayerConnectionConfigureEvent:
+    set {_dialog} to get_dialog("main")
+    if {_dialog} is not set:
+        stop
+    set {_connection} to event.getConnection()
+    set {_profile} to {_connection}.getProfile()
+    set {_uuid} to {_profile}.getId()
+    if {_uuid} is not set:
+        stop
+    set {_future} to new CompletableFuture()
+    {_future}.completeOnTimeout(false, 10, TimeUnit.MINUTES)
+    set {_key} to "%{_uuid}%"
+    set {-dialog::%{_key}%} to {_future}
+    set {_audience} to {_connection}.getAudience()
+    {_audience}.showDialog({_dialog})
+    set {_result} to {_future}.join()
+    if {_result} != true:
+        {_audience}.closeDialog()
+        {_connection}.disconnect(Component.text("{@kick-message}", NamedTextColor.RED))
+    delete {-dialog::%{_key}%}
+
+on PlayerCustomClickEvent:
+    set {_connection} to event.getCommonConnection()
+    if "%{_connection}%" doesn't contain "PlayerConfigurationConnection": #instance 어캐구하더라
+        stop
+    set {_uuid} to {_connection}.getProfile().getId()
+    if {_uuid} is null:
+        stop
+    set {_audience} to {_connection}.getAudience()
+    set {_identifier} to event.getIdentifier()
+    if {_identifier}.equals(Key.key("fail/quit")):
+        set_join_result({_uuid}, false)
+    else if {_identifier}.equals(Key.key("fail/re")):
+        wait {@쿨타임} tick
+        {_audience}.showDialog(get_dialog("main"))
+    else if {_identifier}.equals(Key.key("success/re")):
+        wait {@쿨타임} tick
+        {_audience}.showDialog(get_dialog("main"))
+    else if {_identifier}.equals(Key.key("success/quit")):
+        set_join_result({_uuid}, false)
+    else if {_identifier}.equals(Key.key("main/success")):
+        {_audience}.showDialog(get_dialog("success"))
+        broadcast "&e&l%{_connection}.getProfile().getName()% 성공!"
+    else:
+        {_audience}.showDialog(get_dialog("fail"))
+
+on PlayerConnectionCloseEvent:
+    set {_uuid} to event.getPlayerUniqueId()
+    if {_uuid} is not set:
+        stop
+    set {_key} to "%{_uuid}%"
+    delete {-dialog::%{_key}%}

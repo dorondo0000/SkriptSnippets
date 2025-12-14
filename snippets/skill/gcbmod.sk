@@ -1,0 +1,164 @@
+#for https://github.com/eiqq/GCB-mod
+#credit: EIQUI,dbuild
+#====================================================================================================
+import:
+    org.bukkit.Bukkit
+    org.bukkit.plugin.messaging.PluginMessageListener
+    ch.njol.skript.Skript
+    java.nio.charset.StandardCharsets
+    net.minecraft.network.FriendlyByteBuf
+    io.netty.buffer.Unpooled
+    io.netty.buffer.ByteBufUtil
+ #====================================================================================================
+on load:
+    set {_functions::onPluginMessageReceived} to function reference "onPluginMessageReceived"
+    set {gcb.keyinput.proxy} to new proxy instance of PluginMessageListener using {_functions::*}
+    Bukkit.getServer().getMessenger().registerIncomingPluginChannel(Skript.getInstance(), "minecraft:gcb", {gcb.keyinput.proxy})
+    Bukkit.getMessenger().registerOutgoingPluginChannel(Skript.getInstance(), "minecraft:gcb")
+ 
+on unload:
+    Bukkit.getMessenger().unregisterIncomingPluginChannel(Skript.getInstance(), "minecraft:gcb", {gcb.keyinput.proxy})
+    Bukkit.getMessenger().unregisterOutgoingPluginChannel(Skript.getInstance(), "minecraft:gcb")
+#====================================================================================================
+on join:
+    delete player's metadata "gcbmod"
+
+function onPluginMessageReceived(this: Object, channel: String, player: Player, message: Object):
+    set {_parts::*} to new String({_message}) split at ":"
+
+    if {_parts::2} is not set:
+        if {_player}'s metadata "gcbmod" = true:
+            stop
+        if {_parts::1} contains "1.0.19":
+            set {_player}'s metadata "gcbmod" to true
+            broadcast "&f%{_player}% 는 GCB모드&e 버전 1.0.19 &f을 깔았습니다"
+        else if {_parts::1} contains "2.0.0":
+            set {_player}'s metadata "gcbmod" to true
+            broadcast "&f%{_player}% 는 GCB모드&e 버전2.0.0 &f을 깔았습니다"
+
+    else if {_parts::3} is "true":
+        IsCombat({_player}) = true
+        if {_parts::2}.length() is 12:
+            set {_key} to ({_parts::2}.substring(11) parsed as integer) - 1
+            {_key} is not -1 
+            Tryskill({_player},{_key})
+        else if {_parts::2}.length() is 14:
+            set {_key} to {_parts::2}.substring(13)
+
+            if {_key} is "z":
+                #
+            else if {_key} is "x":
+                #
+            else if {_key} is "c":
+                #
+            else if {_key} is "v": 
+                #
+#====================================================================================================
+
+function gcb_send_packet(p:players,text:string):
+    set {_bb} to Unpooled.buffer()
+    set {_fb} to new FriendlyByteBuf({_bb})
+    {_fb}.writeUtf({_text})         
+    set {_payload} to ByteBufUtil.getBytes({_bb}, 0, {_bb}.writerIndex(), false)
+    loop {_p::*}:
+        loop-value.sendPluginMessage(Skript.getInstance(), "minecraft:gcb", {_payload})
+
+#====================================================================================================
+
+function Particle_combine(partic:string,shape:string):: string:
+    return "PARTICLE:" + {_partic} + ":" + {_shape}
+
+function Partic_serialize(particle:string,offset:vector,count:int,speed:number,force:boolean,data:string):: string:
+    add ":" + "%{_offset}.x%,%{_offset}.y%,%{_offset}.z%" to {_particle}
+    add ":" + "%{_count}%" to {_particle}
+    add ":" + "%{_speed}%" to {_particle}
+    add ":" + ("true" if {_force} = true else "false") to {_particle}
+    add ":" + {_data} to {_particle}
+    return {_particle}
+#====================================================================================================
+function Circle_serialize(axis:vector,rotate:vector,points:int,angle:number,expand:number,time:number,matrix:vectors,target:string="0",positions:vectors={_}):: string:
+    set {_text} to "circle"
+    add ":" + "%{_axis}.x%,%{_axis}.y%,%{_axis}.z%" to {_text}
+    add ":" + "%{_rotate}.x%,%{_rotate}.y%,%{_rotate}.z%" to {_text}
+    add ":" + "%{_points}%" to {_text}
+    add ":" + "%{_angle}%" to {_text}
+    add ":" + "%{_expand}%" to {_text}
+    add ":" + "%{_time}%" to {_text}
+    add ":" + "%{_matrix::1}.x%,%{_matrix::1}.y%,%{_matrix::1}.z%" to {_text}
+    add ":" + "%{_matrix::2}.x%,%{_matrix::2}.y%,%{_matrix::2}.z%" to {_text}
+    add ":" + "%{_matrix::3}.x%,%{_matrix::3}.y%,%{_matrix::3}.z%" to {_text}
+    add ":" + {_target} to {_text}
+    loop {_positions::*}:
+        add ":" + "%loop-value.x%,%loop-value.y%,%loop-value.z%" to {_text}
+    return {_text}
+
+function Line_serialize(period:number,expand:number,time:number,matrix:vectors,target:string="0",positions:vectors={_}):: string:
+    set {_text} to "line"
+    add ":" + "%{_period}%" to {_text}
+    add ":" + "%{_expand}%" to {_text}
+    add ":" + "%{_time}%" to {_text}
+    add ":" + "%{_matrix::1}.x%,%{_matrix::1}.y%,%{_matrix::1}.z%" to {_text}
+    add ":" + "%{_matrix::2}.x%,%{_matrix::2}.y%,%{_matrix::2}.z%" to {_text}
+    add ":" + "%{_matrix::3}.x%,%{_matrix::3}.y%,%{_matrix::3}.z%" to {_text}
+    add ":" + {_target} to {_text}
+    loop {_positions::*}:
+        add ":" + "%loop-value.x%,%loop-value.y%,%loop-value.z%" to {_text}
+    return {_text}
+
+function Sphere_serialize(axis:vector,points:int,expand:number,time:number,matrix:vectors,target:string="0",positions:vectors={_}):: string:
+    set {_text} to "sphere"
+    add ":" + "%{_axis}.x%,%{_axis}.y%,%{_axis}.z%" to {_text}
+    add ":" + "%{_points}%" to {_text}
+    add ":" + "%{_expand}%" to {_text}
+    add ":" + "%{_time}%" to {_text}
+    add ":" + "%{_matrix::1}.x%,%{_matrix::1}.y%,%{_matrix::1}.z%" to {_text}
+    add ":" + "%{_matrix::2}.x%,%{_matrix::2}.y%,%{_matrix::2}.z%" to {_text}
+    add ":" + "%{_matrix::3}.x%,%{_matrix::3}.y%,%{_matrix::3}.z%" to {_text}
+    add ":" + {_target} to {_text}
+    loop {_positions::*}:
+        add ":" + "%loop-value.x%,%loop-value.y%,%loop-value.z%" to {_text}
+    return {_text}
+
+function Spiral_serialize(axis:vector,rotate:vector,points:int,period:number,increment:number,converge:boolean,expand:number,time:number,matrix:vectors,target:string="0",positions:vectors={_}):: string:
+    set {_text} to "spiral"
+    add ":" + "%{_axis}.x%,%{_axis}.y%,%{_axis}.z%" to {_text}
+    add ":" + "%{_rotate}.x%,%{_rotate}.y%,%{_rotate}.z%" to {_text}
+    add ":" + "%{_points}%" to {_text}
+    add ":" + "%{_period}%" to {_text}
+    add ":" + "%{_increment}%" to {_text}
+    add ":" + ("true" if {_converge} = true else "false") to {_particle}
+    add ":" + "%{_expand}%" to {_text}
+    add ":" + "%{_time}%" to {_text}
+    add ":" + "%{_matrix::1}.x%,%{_matrix::1}.y%,%{_matrix::1}.z%" to {_text}
+    add ":" + "%{_matrix::2}.x%,%{_matrix::2}.y%,%{_matrix::2}.z%" to {_text}
+    add ":" + "%{_matrix::3}.x%,%{_matrix::3}.y%,%{_matrix::3}.z%" to {_text}
+    add ":" + {_target} to {_text}
+    loop {_positions::*}:
+        add ":" + "%loop-value.x%,%loop-value.y%,%loop-value.z%" to {_text}
+    return {_text}
+
+function SpiralLine_serialize(period:number,radius:number,points:int,startdegree:number,inverse:boolean,expand:number,time:number,matrix:vectors,target:string="0",positions:vectors={_}):: string:
+    set {_text} to "spiralline"
+    add ":" + "%{_period}%" to {_text}
+    add ":" + "%{_radius}%" to {_text}
+    add ":" + "%{_points}%" to {_text}
+    add ":" + "%{_startdegree}%" to {_text}
+    add ":" + ("true" if {_inverse} = true else "false") to {_particle}
+    add ":" + "%{_expand}%" to {_text}
+    add ":" + "%{_time}%" to {_text}
+    add ":" + "%{_matrix::1}.x%,%{_matrix::1}.y%,%{_matrix::1}.z%" to {_text}
+    add ":" + "%{_matrix::2}.x%,%{_matrix::2}.y%,%{_matrix::2}.z%" to {_text}
+    add ":" + "%{_matrix::3}.x%,%{_matrix::3}.y%,%{_matrix::3}.z%" to {_text}
+    add ":" + {_target} to {_text}
+    loop {_positions::*}:
+        add ":" + "%loop-value.x%,%loop-value.y%,%loop-value.z%" to {_text}
+    return {_text}
+#====================================================================================================
+function Particle_getLocationVector(l:location):: vector:
+    return vector(x pos of {_l},y pos of {_l},z pos of {_l})
+#====================================================================================================
+command gcbtest:
+    trigger:
+        set {_text} to Particle_combine(Partic_serialize("dust_color_transition",vector(0,0,0),10,0.01,true,"15436084,3435499,0.3"),Circle_serialize(vector(0,1,0),vector(1,0,0),360,360,0,0,(vector(1,0,0),vector(0,1,0),vector(0,0,1)),"0",(Particle_getLocationVector(location of player))))
+        broadcast {_text}
+        gcb_send_packet(all players,{_text})

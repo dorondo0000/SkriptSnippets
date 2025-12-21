@@ -1,0 +1,54 @@
+options:
+    x: 2
+    y: 0.1
+    
+on join:
+    healthbar_set(player)
+
+on leave:
+    healthbar_remove(player)
+
+on death of player:
+    healthbar_remove(victim)
+
+on respawn:
+    healthbar_set(player)
+
+on damage of player:
+    wait 1 tick
+    healthbar_update(victim)
+
+on heal of player:
+    healthbar_update(player)
+
+function healthbar_set(p:player):
+    spawn item display at {_p}:
+        set pitch of entity to 0
+        set {_e1} to entity
+        set display billboard of entity to vertical
+        set display item of entity to red concrete
+        set display scale of entity to vector({@x},{@y},0)
+        set display brightness of entity to displayBrightness(15,15)
+        set display translation of entity to vector(0,0.2,0)
+    set {_p}'s metadata "healthbar" to {_e1}
+    add {_e1} to passengers of {_p}
+    spawn item display at {_p}:
+        set pitch of entity to 0
+        set {_e2} to entity
+        set display billboard of entity to vertical
+        set display item of entity to gray concrete
+        set display scale of entity to vector({@x},{@y},0)
+        set display translation of entity to vector(0,0.2,-0.001)   
+    set {_p}'s metadata "healthbarframe" to {_e2}
+    add {_e2} to passengers of {_p}
+
+function healthbar_remove(p:player):
+    kill {_p}'s metadata "healthbar"
+    kill {_p}'s metadata "healthbarframe"
+
+function healthbar_update(p:player):
+    set {_e} to {_p}'s metadata "healthbar"
+    if {_e} is alive:
+        set {_size} to ({@x}*{_p}'s health/{_p}'s max health)
+        set display scale of {_e} to vector({_size},{@y},0)
+        set display translation of {_e} to vector((-{@x} + {_size})*0.5,0.2,0)
